@@ -48,14 +48,13 @@
         state: directory
         mode: '0755'
 
-    - stat:
-        path: "/opt/otrs/Kernel/Config.pm"
-      register: stat_kernelconfig
-
     - name: Copy default config file
-      shell:
-        cmd: "cp /opt/otrs/Kernel/Config.pm.dist /opt/otrs/Kernel/Config.pm"
-      when: stat_kernelconfig.stat.exists is defined and not stat_kernelconfig.stat.exists
+      template:
+        src: Config.pm.j2
+        dest: /opt/otrs/Kernel/Config.pm
+        mode: '0640'
+        owner: otrs
+        group: otrs
 
     - name: Check /opt/otrs/bin/cgi-bin/index.pl
       shell: perl -cw /opt/otrs/bin/cgi-bin/index.pl
@@ -100,11 +99,20 @@
         state: restarted
 
     - name: Set OTRS Permission
-      shell: /opt/otrs/bin/otrs.SetPermissions.pl
+      shell:
+        cmd: /opt/otrs/bin/otrs.SetPermissions.pl
 
-    - name: Activate 
+    - name: Active OTRS Daemon
+      shell:
+        cmd: su -l otrs -c '/opt/otrs/bin/otrs.Daemon.pl start'
 
-
+    - name: Rename OTRS Cron .dist files
+      shell:
+        chdir: /opt/otrs/var/cron
+        cmd: "for foo in *.dist; do cp $foo $(basename $foo .dist); done"
+    - name: Active OTRS Cron
+      shell:
+        cmd: su -l otrs -c '/opt/otrs/bin/Cron.sh start'
 
 
 

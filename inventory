@@ -1,0 +1,10 @@
+all:
+  hosts:
+    test:
+      ansible_host: 192.168.178.210
+      ansible_user: ansible
+      ansible_become: yes
+      ansible_python_interpreter: /usr/bin/python3
+
+
+

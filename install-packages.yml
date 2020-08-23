@@ -2,18 +2,20 @@
 - hosts: all
 
   tasks:
-    - apt:
+    - name: Install ansible related requirements
+      apt:
         state: present
         name:
           - aptitude
           - cpanminus
+          - python3-pymysql
         force_apt_get: yes
 
     # - name: Add Certbot repo
     #   apt_repository:
     #     state: present
     #     repo: "ppa:certbot/certbot"
-    #     filename: certbot-ppa
+    #     filename: certbot-ppa:
 
     # - name: Install Certbot
     #   apt:
@@ -26,6 +28,14 @@
         update_cache: yes
         name: '*'
         state: latest
+
+    - name: Install Linux Packages
+      apt:
+        state: present
+        name:
+          - ntp
+          - borgbackup
+          - htop
 
     - name: Install OTRS requirements
       apt:
@@ -64,3 +74,4 @@
         system_lib: yes
       with_items:
         - "DateTime::TimeZone"
+

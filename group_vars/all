@@ -1,0 +1,6 @@
+---
+OTRS_DB: otrs
+OTRS_DB_USER: otrs
+OTRS_DB_PASS: "otrs"
+
+
