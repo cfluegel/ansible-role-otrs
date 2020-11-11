@@ -1,0 +1,112 @@
+---
+- name: Add OTRS User
+  user:
+    name: otrs
+    comment: "OTRS User"
+    create_home: no
+    home: /opt/otrs
+    groups:
+      - www-data
+    password_lock: yes
+    shell: /bin/bash
+    state: present
+
+- stat:
+    path: "/opt/otrs"
+  register: stat_otrsdir
+
+- name: Download OTRS.tgz package
+  unarchive:
+    src: "{{ OTRSDownloadURL }}"
+    dest: /opt/
+    remote_src: yes
+  register: result_unarchive
+  when: stat_otrsdir.stat.isdir is not defined
+
+- name: Rename downloaded directory
+  shell:
+    cmd: "mv /opt/{{ OTRSDirectory }} /opt/otrs"
+  when: result_unarchive.extract_results is defined and result_unarchive.extract_results.rc == 0
+
+- name: Correct directory owner
+  file:
+    path: /opt/otrs
+    state: directory
+    owner: otrs
+    group: otrs
+    recurse: yes
+- name: Correct directory mode
+  file:
+    path: /opt/otrs
+    state: directory
+    mode: '0755'
+
+- name: Copy default config file
+  template:
+    src: Config.pm.j2
+    dest: /opt/otrs/Kernel/Config.pm
+    mode: '0640'
+    owner: otrs
+    group: otrs
+
+- name: Check /opt/otrs/bin/cgi-bin/index.pl
+  shell: perl -cw /opt/otrs/bin/cgi-bin/index.pl
+  ignore_errors: no
+  register: otrs_check
+  failed_when: otrs_check.rc >= 1
+
+- name: Check /opt/otrs/bin/cgi-bin/customer.pl
+  shell: perl -cw /opt/otrs/bin/cgi-bin/customer.pl
+  ignore_errors: no
+  register: otrs_check
+  failed_when: otrs_check.rc >= 1
+
+- name: Check /opt/otrs/bin/otrs.Console.pl
+  shell: perl -cw /opt/otrs/bin/otrs.Console.pl
+  ignore_errors: no
+  register: otrs_check
+  failed_when: otrs_check.rc >= 1
+
+# Need to make this as a template in order to make sure I add a domain
+- name: Symlink OTRS Apache2 config to Apache site-enabled
+  file:
+    state: link
+    src: /opt/otrs/scripts/apache2-httpd.include.conf
+    dest: /etc/apache2/sites-enabled/zzz_otrs.conf
+    owner: root
+    group: root
+
+- name: Activate Apache Modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - perl
+    - version
+    - deflate
+    - filter
+    - headers
+- name: Restart Apache
+  service:
+    name: apache2
+    state: restarted
+
+- name: Set OTRS Permission
+  shell:
+    cmd: /opt/otrs/bin/otrs.SetPermissions.pl
+
+- name: Active OTRS Daemon
+  shell:
+    cmd: su -l otrs -c '/opt/otrs/bin/otrs.Daemon.pl start'
+
+- name: Rename OTRS Cron .dist files
+  shell:
+    chdir: /opt/otrs/var/cron
+    cmd: "for foo in *.dist; do cp $foo $(basename $foo .dist); done"
+- name: Active OTRS Cron
+  shell:
+    cmd: su -l otrs -c '/opt/otrs/bin/Cron.sh start'
+
+
+
+

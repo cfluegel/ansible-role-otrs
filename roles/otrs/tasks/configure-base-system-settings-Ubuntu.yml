@@ -1,0 +1,3 @@
+---
+- debug:
+    msg: "No Base configuration is done yet!"

@@ -1,0 +1,6 @@
+---
+# tasks file for otrs
+- include_tasks: configure-base-system-settings-{{ansible_distribution}}.yml
+- include_tasks: install-packages-{{ansible_distribution}}.yml
+- include_tasks: configure-mariadb-{{ansible_distribution}}.yml
+- include_tasks: install-otrs-from-source-{{ansible_distribution}}.yml
